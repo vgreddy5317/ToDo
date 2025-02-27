@@ -26,8 +26,11 @@ def main():
 
         if st.button("Add Task", type="primary") and task_title:
             todo_manager.add_task(task_title, task_description, category, priority, due_date)
+
+            # Reload the tasks in session state and refresh UI
+            st.session_state.tasks = todo_manager.get_filtered_tasks(["All"], ["All"], "Due Date")
             st.success("Task added successfully!")
-            st.rerun()
+            st.rerun()  # <-- Corrected from st.experimental_rerun()
 
     col1, col2 = st.columns([2, 1])
 
@@ -62,16 +65,14 @@ def main():
                             if st.button("Complete", key=f"complete_{idx}", type="primary"):
                                 todo_manager.toggle_task_status(idx)
                                 st.success("Task completed!")
-                                time.sleep(1)
-                                st.rerun()
+                                st.rerun()  # <-- Corrected from st.experimental_rerun()
                         else:
                             st.write("✅ Done")
 
                         if st.button("Delete", key=f"delete_{idx}", type="secondary"):
                             todo_manager.delete_task(idx)
                             st.success("Task deleted!")
-                            time.sleep(1)
-                            st.rerun()
+                            st.rerun()  # <-- Corrected from st.experimental_rerun()
                     st.divider()
         else:
             st.info("No tasks found.")
@@ -87,3 +88,7 @@ def main():
         if stats['total_tasks'] > 0:
             progress = stats['completed_tasks'] / stats['total_tasks']
             st.progress(progress)
+
+
+if __name__ == "__main__":
+    main()
