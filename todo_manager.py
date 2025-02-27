@@ -20,9 +20,15 @@ class TodoManager:
 
     def load_tasks(self):
         """Load tasks from CSV file"""
-        self.tasks = pd.read_csv(self.file_path)
-        self.tasks['due_date'] = pd.to_datetime(self.tasks['due_date']).dt.date
-        self.tasks['created_at'] = pd.to_datetime(self.tasks['created_at'])
+        if os.path.exists(self.file_path) and os.path.getsize(self.file_path) > 0:
+            self.tasks = pd.read_csv(self.file_path)
+            self.tasks['due_date'] = pd.to_datetime(self.tasks['due_date']).dt.date
+            self.tasks['created_at'] = pd.to_datetime(self.tasks['created_at'])
+        else:
+            self.tasks = pd.DataFrame(columns=[
+                'title', 'description', 'category', 'priority',
+                'due_date', 'completed', 'created_at'
+            ])
 
     def save_tasks(self):
         """Save tasks to CSV file"""
@@ -39,25 +45,30 @@ class TodoManager:
             'completed': False,
             'created_at': datetime.now()
         }
+        self.load_tasks()  # Ensure we have the latest data
         self.tasks = pd.concat([self.tasks, pd.DataFrame([new_task])], ignore_index=True)
         self.save_tasks()
 
     def delete_task(self, index):
         """Delete a task by index"""
+        self.load_tasks()
         self.tasks = self.tasks.drop(index)
         self.save_tasks()
 
     def toggle_task_status(self, index):
         """Toggle task completion status"""
+        self.load_tasks()
         self.tasks.at[index, 'completed'] = not self.tasks.at[index, 'completed']
         self.save_tasks()
 
     def get_categories(self):
         """Get unique categories"""
-        return self.tasks['category'].unique().tolist()
+        self.load_tasks()
+        return self.tasks['category'].unique().tolist() if not self.tasks.empty else []
 
     def get_filtered_tasks(self, categories, priorities, sort_by):
         """Get filtered and sorted tasks"""
+        self.load_tasks()  # Ensure the latest tasks are loaded from CSV
         filtered_tasks = self.tasks.copy()
 
         # Apply category filter
@@ -74,8 +85,7 @@ class TodoManager:
         elif sort_by == "Priority":
             priority_order = {"High": 0, "Medium": 1, "Low": 2}
             filtered_tasks['priority_rank'] = filtered_tasks['priority'].map(priority_order)
-            filtered_tasks = filtered_tasks.sort_values('priority_rank')
-            filtered_tasks = filtered_tasks.drop('priority_rank', axis=1)
+            filtered_tasks = filtered_tasks.sort_values('priority_rank').drop('priority_rank', axis=1)
         elif sort_by == "Category":
             filtered_tasks = filtered_tasks.sort_values('category')
 
@@ -83,8 +93,9 @@ class TodoManager:
 
     def get_statistics(self):
         """Get task statistics"""
+        self.load_tasks()
         total_tasks = len(self.tasks)
-        completed_tasks = len(self.tasks[self.tasks['completed']])
+        completed_tasks = len(self.tasks[self.tasks['completed']]) if not self.tasks.empty else 0
         
         return {
             'total_tasks': total_tasks,
